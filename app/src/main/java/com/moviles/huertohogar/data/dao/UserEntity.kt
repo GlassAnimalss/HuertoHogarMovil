@@ -10,5 +10,6 @@ data class UserEntity(
     val email: String,
     val passwordHash: String, // Aquí se almacena la contraseña (simulada)
     val role: UserRole,
-    val name: String? = null
+    val name: String? = null,
+    val profileImageUri: String? = null
 )

@@ -1,17 +1,25 @@
+// Archivo: app/src/main/java/com.moviles.huertohogar/ui/screens/auth/RegistrationScreen.kt
+
 package com.moviles.huertohogar.ui.screens.auth
 
+import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.moviles.huertohogar.R
 import com.moviles.huertohogar.data.database.AppDatabase
 import com.moviles.huertohogar.data.repository.AuthRepository
+import com.moviles.huertohogar.domain.utils.ValidationUtils // Importamos la utilidad de validación
 import kotlinx.coroutines.launch
 
 @Composable
@@ -23,23 +31,12 @@ fun RegistrationScreen(
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    // --- Instancias para Room y Coroutines ---
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
     val authRepository = remember {
         AuthRepository(AppDatabase.getDatabase(context).userDao())
     }
-    // -----------------------------------------
-
-    // 1. Lógica de Validación de Email
-    val isEmailValid = remember(email) {
-        // Validación simple: no vacío, contiene '@' y '.'
-        email.isNotBlank() && email.contains("@") && email.contains(".")
-    }
-
-    // 2. Condición Final para habilitar el botón
-    val isFormValid = name.isNotBlank() && isEmailValid && password.length >= 6
 
     Column(
         modifier = Modifier
@@ -48,6 +45,18 @@ fun RegistrationScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        // ---------------------------------------------
+        // LOGO (Para mantener consistencia con Login)
+        // ---------------------------------------------
+        Image(
+            painter = painterResource(id = R.drawable.huerto_hogar_2),
+            contentDescription = "Logo HuertoHogar Registro",
+            modifier = Modifier
+                .height(80.dp)
+                .padding(bottom = 24.dp),
+            contentScale = ContentScale.Fit
+        )
+
         Text(
             text = "CREAR CUENTA CLIENTE",
             style = MaterialTheme.typography.headlineMedium,
@@ -55,9 +64,7 @@ fun RegistrationScreen(
             modifier = Modifier.padding(bottom = 32.dp)
         )
 
-        // ---------------------------------------------
-        // <<< CAMPOS DE TEXTO >>>
-        // ---------------------------------------------
+        // CAMPO NOMBRE
         OutlinedTextField(
             value = name,
             onValueChange = { name = it },
@@ -66,65 +73,62 @@ fun RegistrationScreen(
             modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
         )
 
+        // CAMPO EMAIL (Con validación visual)
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
             label = { Text("Correo Electrónico") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-
-            isError = email.isNotEmpty() && !isEmailValid,
+            // Se pone rojo si no es válido
+            isError = email.isNotEmpty() && !ValidationUtils.isValidEmail(email),
             modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
         )
 
+        // CAMPO PASSWORD (Con validación visual)
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
-            label = {
-                Text(
-                    if (password.isNotEmpty() && password.length < 6)
-                        "Contraseña (mínimo 6 caracteres)"
-                    else
-                        "Contraseña"
-                )
-            },
+            label = { Text("Contraseña (mín. 6 caracteres)") },
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            isError = password.isNotEmpty() && password.length < 6, // Muestra error si es muy corta
+            // Se pone rojo si no es válida
+            isError = password.isNotEmpty() && !ValidationUtils.isValidPassword(password),
             modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)
         )
-        // ---------------------------------------------
 
-        // Botón de Registro
+        // BOTÓN DE REGISTRO
         Button(
             onClick = {
                 scope.launch {
                     try {
                         val success = authRepository.registerUser(name, email, password)
                         if (success) {
-                            // Limpiamos los campos y volvemos al Login
+                            // Limpiamos y notificamos éxito
                             name = ""
                             email = ""
                             password = ""
+                            Toast.makeText(context, "Cuenta creada con éxito", Toast.LENGTH_SHORT).show()
                             onRegistrationSuccess()
                         } else {
-                            println("Error: Email ya en uso o problema de registro.")
+                            // Error de negocio (ej. email duplicado)
+                            Toast.makeText(context, "Error: El correo ya está registrado.", Toast.LENGTH_LONG).show()
                         }
                     } catch (e: Exception) {
-                        println("FATAL ERROR ROOM REGISTER: ${e.message}")
+                        // Error técnico (Crash de Room)
+                        println("FATAL ERROR REGISTER: ${e.message}")
+                        Toast.makeText(context, "Error interno de base de datos", Toast.LENGTH_SHORT).show()
                     }
                 }
             },
-            // Habilitado solo si el formulario es completamente válido
-            enabled = isFormValid,
-            modifier = Modifier.fillMaxWidth().height(50.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.tertiary)
+            // Habilitado solo si TODO es válido según ValidationUtils
+            enabled = name.isNotBlank() && ValidationUtils.isValidEmail(email) && ValidationUtils.isValidPassword(password),
+            modifier = Modifier.fillMaxWidth().height(50.dp)
         ) {
             Text("Crear Cuenta")
         }
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Botón para volver al Login
         TextButton(onClick = onNavigateBack) {
             Text("Volver al Inicio de Sesión")
         }

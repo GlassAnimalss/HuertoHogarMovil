@@ -1,4 +1,4 @@
-// Archivo: app/src/main/java/com.moviles.huertohogar/MainActivity.kt (Versión Final)
+// Archivo: app/src/main/java/com.moviles.huertohogar/MainActivity.kt
 
 package com.moviles.huertohogar
 
@@ -11,11 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -25,11 +21,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.moviles.huertohogar.domain.auth.AuthState
-import com.moviles.huertohogar.domain.auth.UserRole
-import com.moviles.huertohogar.navigation.NavRoutes
 import com.moviles.huertohogar.data.database.AppDatabase
 import com.moviles.huertohogar.data.repository.AuthRepository
+import com.moviles.huertohogar.domain.auth.AuthState
+import com.moviles.huertohogar.domain.auth.UserRole
+import com.moviles.huertohogar.navigation.BottomNavItem
+import com.moviles.huertohogar.navigation.NavRoutes
+import com.moviles.huertohogar.navigation.bottomNavItems
 import com.moviles.huertohogar.ui.common.AppHeader
 import com.moviles.huertohogar.ui.screens.admin.AdminProductManagementScreen
 import com.moviles.huertohogar.ui.screens.auth.LoginScreen
@@ -38,12 +36,10 @@ import com.moviles.huertohogar.ui.screens.cart.CartScreen
 import com.moviles.huertohogar.ui.screens.contact.ContactScreen
 import com.moviles.huertohogar.ui.screens.home.HomeScreen
 import com.moviles.huertohogar.ui.screens.products.ProductsScreen
+import com.moviles.huertohogar.ui.screens.profile.ProfileScreen
 import com.moviles.huertohogar.ui.screens.stores.StoresScreen
 import com.moviles.huertohogar.ui.theme.HuertoHogarTheme
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
-
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -61,32 +57,9 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// ----------------------------------------------------
-// Estructura de Navegación del Menú Inferior (Cliente)
-// ----------------------------------------------------
-
-data class BottomNavItem(
-    val route: String,
-    val icon: ImageVector,
-    val label: String
-)
-
-val clientNavItems = listOf(
-    BottomNavItem(NavRoutes.HOME, Icons.Filled.Home, "Inicio"),
-    BottomNavItem(NavRoutes.PRODUCTS, Icons.Filled.LocalGroceryStore, "Productos"),
-    BottomNavItem(NavRoutes.STORES, Icons.Filled.LocationOn, "Sucursales"),
-    BottomNavItem(NavRoutes.CONTACT, Icons.Filled.Email, "Contacto"),
-    BottomNavItem(NavRoutes.LOGIN, Icons.Filled.ExitToApp, "Salir")
-)
-
-// ----------------------------------------------------
-// Functión Principal de la Aplicación (Gestión de Roles)
-// ----------------------------------------------------
-
 @Composable
 fun HuertoHogarApp() {
     val navController = rememberNavController()
-
     var authState by remember { mutableStateOf(AuthState()) }
     val onLogout: () -> Unit = { authState = AuthState() }
 
@@ -101,15 +74,15 @@ fun HuertoHogarApp() {
             try {
                 authRepository.createAdminIfNotExist()
             } catch (e: Exception) {
-                println("FATAL ERROR ROOM INIT/CREATE ADMIN: ${e.message}")
+                println("FATAL ERROR ROOM INIT: ${e.message}")
             }
         }
     }
 
     if (!authState.isAuthenticated) {
         AuthNavigation(
-            onLoginSuccess = { role ->
-                authState = AuthState(isAuthenticated = true, role = role)
+            onLoginSuccess = { role, email ->
+                authState = AuthState(isAuthenticated = true, role = role, userEmail = email)
                 navController.navigate(NavRoutes.HOME) {
                     popUpTo(NavRoutes.HOME) { inclusive = true }
                 }
@@ -125,7 +98,6 @@ fun HuertoHogarApp() {
         Scaffold(
             topBar = {
                 AppHeader(onCartClick = {
-
                     navController.navigate(NavRoutes.CART) {
                         popUpTo(navController.currentDestination?.route ?: NavRoutes.HOME) {
                             saveState = true
@@ -137,7 +109,6 @@ fun HuertoHogarApp() {
                 HuertoHogarBottomBar(
                     navController = navController,
                     currentRoute = currentRoute,
-                    navItems = clientNavItems,
                     onLogout = onLogout
                 )
             }
@@ -145,16 +116,15 @@ fun HuertoHogarApp() {
             HuertoHogarNavHost(
                 navController = navController,
                 modifier = Modifier.padding(paddingValues),
-                onLogout = onLogout
+                onLogout = onLogout,
+                authState = authState
             )
         }
     }
 }
 
-
-
 @Composable
-fun AuthNavigation(onLoginSuccess: (UserRole) -> Unit, navController: NavHostController) {
+fun AuthNavigation(onLoginSuccess: (UserRole, String) -> Unit, navController: NavHostController) {
     NavHost(navController = navController, startDestination = "login_screen") {
         composable("login_screen") {
             LoginScreen(
@@ -171,11 +141,13 @@ fun AuthNavigation(onLoginSuccess: (UserRole) -> Unit, navController: NavHostCon
     }
 }
 
-
-
-
 @Composable
-fun HuertoHogarNavHost(navController: NavHostController, modifier: Modifier, onLogout: () -> Unit) {
+fun HuertoHogarNavHost(
+    navController: NavHostController,
+    modifier: Modifier,
+    onLogout: () -> Unit,
+    authState: AuthState
+) {
     NavHost(
         navController = navController,
         startDestination = NavRoutes.HOME,
@@ -186,14 +158,23 @@ fun HuertoHogarNavHost(navController: NavHostController, modifier: Modifier, onL
         composable(NavRoutes.CONTACT) { ContactScreen() }
         composable(NavRoutes.STORES) { StoresScreen() }
 
-        // RUTA DE CARRITO
-        composable(NavRoutes.CART) {
-            CartScreen(onPaymentSuccess = {
-
-                navController.popBackStack()
-            })
+        composable(NavRoutes.PROFILE) {
+            ProfileScreen(userEmail = authState.userEmail ?: "")
         }
 
+        composable(NavRoutes.CART) {
+            CartScreen(
+                // PASAMOS EL EMAIL AL CARRITO
+                userEmail = authState.userEmail ?: "",
+                onPaymentSuccess = {
+                    navController.popBackStack()
+                    navController.navigate(NavRoutes.PRODUCTS) {
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                }
+            )
+        }
 
         composable(NavRoutes.LOGIN) {
             LaunchedEffect(Unit) {
@@ -204,12 +185,13 @@ fun HuertoHogarNavHost(navController: NavHostController, modifier: Modifier, onL
     }
 }
 
-
 @Composable
-fun HuertoHogarBottomBar(navController: NavHostController, currentRoute: String?, navItems: List<BottomNavItem>, onLogout: () -> Unit) {
+fun HuertoHogarBottomBar(navController: NavHostController, currentRoute: String?, onLogout: () -> Unit) {
     NavigationBar {
-        navItems.forEach { item ->
+        bottomNavItems.forEach { item ->
             val isLogout = item.route == NavRoutes.LOGIN
+            val isProducts = item.route == NavRoutes.PRODUCTS
+            val isSecondaryRoute = currentRoute == NavRoutes.CART
 
             NavigationBarItem(
                 icon = { Icon(item.icon, contentDescription = item.label) },
@@ -218,9 +200,7 @@ fun HuertoHogarBottomBar(navController: NavHostController, currentRoute: String?
                 onClick = {
                     if (isLogout) {
                         onLogout()
-                    }
-
-                    else if (currentRoute != item.route) {
+                    } else if (isProducts || currentRoute != item.route || isSecondaryRoute) {
                         navController.navigate(item.route) {
                             popUpTo(navController.graph.findStartDestination().id) {
                                 saveState = true

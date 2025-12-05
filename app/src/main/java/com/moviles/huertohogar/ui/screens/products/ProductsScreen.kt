@@ -2,6 +2,7 @@
 
 package com.moviles.huertohogar.ui.screens.products
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,7 +17,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.moviles.huertohogar.R
 import com.moviles.huertohogar.data.database.AppDatabase
-import com.moviles.huertohogar.data.dao.ProductEntity
+import com.moviles.huertohogar.data.repository.ProductRepository
 import com.moviles.huertohogar.domain.models.Fruit
 import com.moviles.huertohogar.domain.models.ShoppingCart
 import java.text.NumberFormat
@@ -26,10 +27,9 @@ import java.util.Locale
 // FUNCIÓN DE UTILIDAD
 // ----------------------------------------------------
 
-// Formato de moneda en Pesos Chilenos (CLP)
 fun formatChileanPeso(amount: Double): String {
     val format = NumberFormat.getCurrencyInstance(Locale("es", "CL"))
-    format.maximumFractionDigits = 0 // Quita los centavos
+    format.maximumFractionDigits = 0
     return format.format(amount)
 }
 
@@ -40,18 +40,31 @@ fun formatChileanPeso(amount: Double): String {
 @Composable
 fun ProductsScreen() {
     val context = LocalContext.current
-    // Obtenemos el DAO para acceder a los productos
-    val productDao = remember { AppDatabase.getDatabase(context).productDao() }
 
-    // Observamos todos los productos de la base de datos
+    // 1. Inicialización de DAO y Repositorio
+    val productDao = remember { AppDatabase.getDatabase(context).productDao() }
+    val productRepository = remember { ProductRepository(productDao) }
+
+    // 2. Observamos la base de datos (Fuente de Verdad)
+    // Cualquier cambio en Room (por la API o por el Admin) se refleja aquí automáticamente
     val productEntities by productDao.getAllProducts().collectAsState(initial = emptyList())
 
-    // Mapeamos ProductEntity (de Room) a Fruit (para el ShoppingCart)
-    val availableProducts = productEntities
-        .filter { it.stock > 0 } // Filtramos para mostrar SOLO productos con Stock > 0
-        .map {
-            Fruit(it.id, it.name, it.price, it.unit, it.imageResId)
-        }
+    // 3. Sincronización con API al iniciar
+    LaunchedEffect(Unit) {
+        productRepository.refreshProductsFromApi()
+    }
+
+    // 4. Mapeo de Entidad (BD) a Modelo de Dominio (UI)
+    val availableProducts = productEntities.map {
+        Fruit(
+            id = it.id,
+            name = it.name,
+            price = it.price,
+            unit = it.unit,
+            stock = it.stock,
+            imageResId = it.imageResId
+        )
+    }
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -66,8 +79,11 @@ fun ProductsScreen() {
             Spacer(modifier = Modifier.height(16.dp))
         }
 
-        // Listamos solo los productos que están disponibles (stock > 0)
-        items(availableProducts) { fruit ->
+        // Usamos 'key' para mejorar el rendimiento de la lista
+        items(
+            items = availableProducts,
+            key = { it.id }
+        ) { fruit ->
             ProductItem(fruit = fruit)
         }
     }
@@ -79,6 +95,15 @@ fun ProductsScreen() {
 
 @Composable
 fun ProductItem(fruit: Fruit) {
+    val context = LocalContext.current
+
+    // Calculamos cuántas unidades de este producto ya están en el carrito
+    val quantityInCart by remember {
+        derivedStateOf {
+            ShoppingCart.items.find { it.fruit.id == fruit.id }?.quantity ?: 0
+        }
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -90,9 +115,8 @@ fun ProductItem(fruit: Fruit) {
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Sección de Imagen
+            // Imagen del Producto
             Image(
-                // Usa el ID del recurso guardado en la Entidad
                 painter = painterResource(id = fruit.imageResId),
                 contentDescription = fruit.name,
                 modifier = Modifier
@@ -101,24 +125,38 @@ fun ProductItem(fruit: Fruit) {
                 contentScale = ContentScale.Crop
             )
 
-            // Sección de Texto e Info
+            // Información (Nombre, Precio, Stock)
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = fruit.name, style = MaterialTheme.typography.titleMedium)
 
-                // Mostrar precio en CLP
                 Text(
                     text = "${formatChileanPeso(fruit.price)} / ${fruit.unit}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.tertiary
                 )
+
+                // Indicador visual de Stock
+                Text(
+                    text = "Stock: ${fruit.stock}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (fruit.stock == 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
 
-            // Botón Añadir
-            Button(onClick = {
-                // Lógica para añadir al carrito: Se actualiza el estado global
-                ShoppingCart.addItem(fruit)
-            }) {
-                Text("Añadir")
+            // Botón de Acción
+            Button(
+                onClick = {
+                    // VALIDACIÓN: Solo permitir si la cantidad en carrito es menor al stock real
+                    if (quantityInCart < fruit.stock) {
+                        ShoppingCart.addItem(fruit)
+                    } else {
+                        Toast.makeText(context, "¡No hay más stock disponible! (Máx: ${fruit.stock})", Toast.LENGTH_SHORT).show()
+                    }
+                },
+                // El botón se deshabilita visualmente si no hay stock
+                enabled = fruit.stock > 0
+            ) {
+                Text(if (fruit.stock == 0) "Agotado" else "Añadir")
             }
         }
     }

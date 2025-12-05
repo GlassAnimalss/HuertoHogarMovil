@@ -1,14 +1,10 @@
 plugins {
-    // Si usas el sistema de libs.plugins, solo deja esto:
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-
-    // Si la línea de 'kotlin("kapt")' te da error, intenta con el alias si lo tienes definido,
-    // o con el ID tradicional si falla:
-    // Opción más segura y simple si la anterior falla:
     id("kotlin-kapt")
 }
+
 android {
     namespace = "com.moviles.huertohogar"
     compileSdk = 36
@@ -45,11 +41,32 @@ android {
 }
 
 dependencies {
-    implementation("androidx.navigation:navigation-compose:2.7.5") // Usa la versión estable más reciente
-    implementation("androidx.compose.material:material-icons-extended:1.6.0") // Usa la versión de Compose que estés usando
-    // Si estás usando Material 3 y Activity Compose, asegúrate de tener estas también:
-    implementation("androidx.compose.material3:material3")
-    implementation("androidx.activity:activity-compose:1.8.1")
+    // --- LIBRERÍAS MANUALES ---
+
+    // Navegación
+    implementation("androidx.navigation:navigation-compose:2.7.7")
+
+    // Iconos Extendidos
+    implementation("androidx.compose.material:material-icons-extended:1.6.0")
+
+    // ROOM: Base de Datos Local
+    val room_version = "2.6.1"
+    implementation("androidx.room:room-runtime:$room_version")
+    implementation("androidx.room:room-ktx:$room_version")
+    kapt("androidx.room:room-compiler:$room_version")
+
+    // PRUEBAS UNITARIAS (JUnit 4)
+    testImplementation("junit:junit:4.13.2")
+
+    // RETROFIT: Conexión API REST
+    val retrofit_version = "2.9.0"
+    implementation("com.squareup.retrofit2:retrofit:$retrofit_version")
+    implementation("com.squareup.retrofit2:converter-gson:$retrofit_version")
+
+    // COIL: Imágenes
+    implementation("io.coil-kt:coil-compose:2.5.0")
+
+    // --- LIBRERÍAS DEL CATÁLOGO ---
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
@@ -58,20 +75,12 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
-    testImplementation(libs.junit)
+
+    // --- TESTING INSTRUMENTAL (Android Test) ---
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
-    // ROOM: Base de Datos
-    val room_version = "2.6.1"
-
-    implementation("androidx.room:room-runtime:$room_version")
-    implementation("androidx.room:room-ktx:$room_version")
-
-    // El error desaparece si el plugin 'kapt' está declarado arriba
-    kapt("androidx.room:room-compiler:$room_version")
-
 }

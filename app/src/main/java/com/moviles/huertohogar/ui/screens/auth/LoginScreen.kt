@@ -1,52 +1,49 @@
+// Archivo: app/src/main/java/com.moviles.huertohogar/ui/screens/auth/LoginScreen.kt
+
 package com.moviles.huertohogar.ui.screens.auth
 
-import androidx.compose.foundation.layout.*
+import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-
+import com.moviles.huertohogar.R
 import com.moviles.huertohogar.data.database.AppDatabase
 import com.moviles.huertohogar.data.repository.AuthRepository
 import com.moviles.huertohogar.domain.auth.UserRole
+import com.moviles.huertohogar.domain.utils.ValidationUtils // Importamos nuestra utilidad de validación
 import kotlinx.coroutines.launch
-import androidx.compose.ui.layout.ContentScale
-import com.moviles.huertohogar.R
-import androidx.compose.ui.res.painterResource
 
 @Composable
 fun LoginScreen(
-    onLoginSuccess: (UserRole) -> Unit, // Navegación al éxito, enviando el rol
-    onNavigateToRegister: () -> Unit // Navegación a la pantalla de registro
+    onLoginSuccess: (UserRole, String) -> Unit,
+    onNavigateToRegister: () -> Unit
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
 
-    // --- Instancias para Room y Coroutines ---
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    // Obtenemos el Repositorio de Autenticación
     val authRepository = remember {
         AuthRepository(AppDatabase.getDatabase(context).userDao())
     }
-    // -----------------------------------------
 
-    // 1. Inicialización de Datos: Protegido contra Crash
     LaunchedEffect(Unit) {
         scope.launch {
             try {
-                // Esto crea al Admin si no existe en la DB
                 authRepository.createAdminIfNotExist()
             } catch (e: Exception) {
-                // Captura el error de Room si la inicialización falló
-                println("FATAL ERROR ROOM INIT/CREATE ADMIN: ${e.message}")
+                println("FATAL ERROR ROOM INIT: ${e.message}")
             }
         }
     }
@@ -59,18 +56,15 @@ fun LoginScreen(
         verticalArrangement = Arrangement.Center
     ) {
 
-        // ---------------------------------------------
-        // <<< LOGO DE HUERTOHOGAR >>>
-        // ---------------------------------------------
+        // LOGO
         Image(
             painter = painterResource(id = R.drawable.huerto_hogar_2),
             contentDescription = "Logo HuertoHogar Login",
             modifier = Modifier
-                .height(350.dp)
+                .height(80.dp)
                 .padding(bottom = 24.dp),
             contentScale = ContentScale.Fit
         )
-        // ---------------------------------------------
 
         Text(
             text = "INICIO DE SESIÓN",
@@ -79,28 +73,29 @@ fun LoginScreen(
             modifier = Modifier.padding(bottom = 32.dp)
         )
 
-        // ---------------------------------------------
-        // <<< CAMPOS DE TEXTO >>>
-        // ---------------------------------------------
+        // CAMPO EMAIL (Con validación visual)
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
             label = { Text("Correo Electrónico") },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+            // Se pone rojo si escribiste algo pero no es válido según tus Utils
+            isError = email.isNotEmpty() && !ValidationUtils.isValidEmail(email),
             modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
         )
 
+        // CAMPO PASSWORD (Con validación visual)
         OutlinedTextField(
             value = password,
             onValueChange = { password = it },
             label = { Text("Contraseña") },
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            isError = password.isNotEmpty() && !ValidationUtils.isValidPassword(password),
             modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp)
         )
-        // ---------------------------------------------
 
-        // Botón de Inicio de Sesión (Lógica REAL de Autenticación)
+        // BOTÓN
         Button(
             onClick = {
                 scope.launch {
@@ -108,20 +103,19 @@ fun LoginScreen(
                         val role = authRepository.loginUser(email, password)
 
                         if (role != UserRole.UNAUTHENTICATED) {
-                            email = ""
+                            onLoginSuccess(role, email)
                             password = ""
-                            onLoginSuccess(role)
                         } else {
-                            println("Error: Credenciales incorrectas.")
-
+                            Toast.makeText(context, "Credenciales incorrectas", Toast.LENGTH_SHORT).show()
                         }
                     } catch (e: Exception) {
-                        println("FATAL ERROR ROOM LOGIN: ${e.message}")
+                        println("FATAL ERROR LOGIN: ${e.message}")
+                        Toast.makeText(context, "Error de conexión", Toast.LENGTH_SHORT).show()
                     }
                 }
             },
-            // <<< VALIDACIÓN DE 6 CARACTERES Y EMAIL NO VACÍO >>>
-            enabled = email.isNotBlank() && password.length >= 6,
+            // USAMOS LA LÓGICA CENTRALIZADA DE VALIDACIÓN
+            enabled = ValidationUtils.isValidEmail(email) && ValidationUtils.isValidPassword(password),
             modifier = Modifier.fillMaxWidth().height(50.dp)
         ) {
             Text("Iniciar Sesión")
@@ -129,7 +123,6 @@ fun LoginScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Botón para Crear Cuenta (Cliente)
         TextButton(onClick = onNavigateToRegister) {
             Text("¿No tienes cuenta? Crear Cliente")
         }

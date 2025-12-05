@@ -20,4 +20,11 @@ interface UserDao {
     // Función de ejemplo para obtener todos los usuarios (útil para administración o debug)
     @Query("SELECT * FROM users")
     fun getAllUsers(): Flow<List<UserEntity>>
+
+    @Query("UPDATE users SET profileImageUri = :imageUri WHERE email = :email")
+    suspend fun updateUserProfileImage(email: String, imageUri: String)
+
+    // NUEVO: Obtener usuario por email en tiempo real (Flow)
+    @Query("SELECT * FROM users WHERE email = :email")
+    fun getUserFlow(email: String): kotlinx.coroutines.flow.Flow<UserEntity?>
 }

@@ -31,6 +31,7 @@ object ShoppingCart {
     /** Calcula el precio total de todos los productos en el carrito. */
     fun getTotalPrice(): Double {
         return items.sumOf { it.fruit.price * it.quantity }
+
     }
 
 

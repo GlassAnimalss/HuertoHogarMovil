@@ -12,5 +12,6 @@ enum class UserRole {
 // Clase para mantener el estado de la sesión
 data class AuthState(
     val isAuthenticated: Boolean = false,
-    val role: UserRole = UserRole.UNAUTHENTICATED
+    val role: UserRole = UserRole.UNAUTHENTICATED,
+    val userEmail: String? = null
 )
