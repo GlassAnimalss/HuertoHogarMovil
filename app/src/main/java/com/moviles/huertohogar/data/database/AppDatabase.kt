@@ -30,7 +30,7 @@ class Converters {
 @Database(
     // Lista de todas las tablas: Usuarios, Productos y Pedidos
     entities = [UserEntity::class, ProductEntity::class, OrderEntity::class],
-    version = 5,
+    version = 6,
     exportSchema = false
 )
 @TypeConverters(Converters::class)

@@ -1,17 +1,16 @@
-
+// Archivo: app/src/main/java/com.moviles.huertohogar/data/dao/ProductEntity.kt
 
 package com.moviles.huertohogar.data.dao
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
-import androidx.annotation.DrawableRes
 
 @Entity(tableName = "products")
 data class ProductEntity(
-    @PrimaryKey(autoGenerate = true) val id: Int = 0,
+    @PrimaryKey(autoGenerate = false) val id: Int, // Usamos el ID de la API
     val name: String,
     val price: Double,
-    val unit: String, // e.g., "kg", "unidad"
-    val stock: Int, // Campo editable por el Admin
-    @DrawableRes val imageResId: Int // ID del recurso de imagen
+    val unit: String,
+    val stock: Int,
+    val imageUrl: String? // <<< CAMBIO: Ahora guardamos la URL (texto)
 )

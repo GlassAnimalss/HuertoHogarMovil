@@ -52,7 +52,7 @@ fun RegistrationScreen(
             painter = painterResource(id = R.drawable.huerto_hogar_2),
             contentDescription = "Logo HuertoHogar Registro",
             modifier = Modifier
-                .height(80.dp)
+                .height(200.dp)
                 .padding(bottom = 24.dp),
             contentScale = ContentScale.Fit
         )
