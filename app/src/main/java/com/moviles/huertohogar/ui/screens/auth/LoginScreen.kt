@@ -20,7 +20,7 @@ import com.moviles.huertohogar.R
 import com.moviles.huertohogar.data.database.AppDatabase
 import com.moviles.huertohogar.data.repository.AuthRepository
 import com.moviles.huertohogar.domain.auth.UserRole
-import com.moviles.huertohogar.domain.utils.ValidationUtils // Importamos nuestra utilidad de validación
+import com.moviles.huertohogar.domain.utils.ValidationUtils
 import kotlinx.coroutines.launch
 
 @Composable

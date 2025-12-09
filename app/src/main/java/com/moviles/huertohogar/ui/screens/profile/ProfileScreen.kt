@@ -56,7 +56,7 @@ fun ProfileScreen(userEmail: String) {
     // Estado del Usuario
     val userState by userDao.getUserFlow(userEmail).collectAsState(initial = null)
 
-    // CAMBIO CRÍTICO: Filtramos los pedidos por el email del usuario conectado
+
     val orders by orderDao.getOrdersByUser(userEmail).collectAsState(initial = emptyList())
 
     val cameraLauncher = rememberLauncherForActivityResult(

@@ -15,7 +15,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
-import coil.compose.AsyncImage // NECESARIO COIL
+import coil.compose.AsyncImage
 import com.moviles.huertohogar.R
 import com.moviles.huertohogar.data.database.AppDatabase
 import com.moviles.huertohogar.data.repository.ProductRepository
@@ -72,7 +72,7 @@ fun ProductItem(fruit: Fruit) {
     Card(modifier = Modifier.fillMaxWidth(), elevation = CardDefaults.cardElevation(2.dp)) {
         Row(modifier = Modifier.fillMaxWidth().padding(16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
 
-            // --- LÓGICA DE IMAGEN (URL vs LOCAL) ---
+
             if (fruit.imageUrl != null) {
                 AsyncImage(
                     model = fruit.imageUrl,

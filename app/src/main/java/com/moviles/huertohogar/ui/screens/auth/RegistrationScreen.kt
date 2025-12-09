@@ -19,7 +19,7 @@ import androidx.compose.ui.unit.dp
 import com.moviles.huertohogar.R
 import com.moviles.huertohogar.data.database.AppDatabase
 import com.moviles.huertohogar.data.repository.AuthRepository
-import com.moviles.huertohogar.domain.utils.ValidationUtils // Importamos la utilidad de validación
+import com.moviles.huertohogar.domain.utils.ValidationUtils
 import kotlinx.coroutines.launch
 
 @Composable
@@ -45,9 +45,7 @@ fun RegistrationScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // ---------------------------------------------
-        // LOGO (Para mantener consistencia con Login)
-        // ---------------------------------------------
+
         Image(
             painter = painterResource(id = R.drawable.huerto_hogar_2),
             contentDescription = "Logo HuertoHogar Registro",

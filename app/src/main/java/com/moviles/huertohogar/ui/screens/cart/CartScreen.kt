@@ -3,7 +3,7 @@
 package com.moviles.huertohogar.ui.screens.cart
 
 import android.widget.Toast
-import androidx.compose.foundation.Image // <--- IMPORTACIÓN PARA IMAGEN LOCAL
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -22,9 +22,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-// Importamos Coil para cargar imágenes URL
+
 import coil.compose.AsyncImage
-// Importamos Recursos y Datos
+
 import com.moviles.huertohogar.R
 import com.moviles.huertohogar.data.dao.OrderEntity
 import com.moviles.huertohogar.data.database.AppDatabase
@@ -34,9 +34,7 @@ import kotlinx.coroutines.launch
 import java.text.NumberFormat
 import java.util.Locale
 
-// ----------------------------------------------------
-// UTILIDAD: Formato de Moneda CLP
-// ----------------------------------------------------
+
 fun formatCurrency(amount: Double): String {
     val format = NumberFormat.getCurrencyInstance(Locale("es", "CL"))
     format.maximumFractionDigits = 0
@@ -114,14 +112,14 @@ fun CartScreen(userEmail: String, onPaymentSuccess: () -> Unit) {
         }
     }
 
-    // Formulario Modal
+
     if (showPaymentForm) {
         CheckoutForm(
             onDismiss = { showPaymentForm = false },
             onConfirm = { name, address, date ->
                 scope.launch {
                     try {
-                        // --- 1. VALIDACIÓN DE STOCK (CRÍTICO) ---
+
                         var stockError: String? = null
 
                         // Verificamos cada ítem contra la BD real
@@ -143,7 +141,7 @@ fun CartScreen(userEmail: String, onPaymentSuccess: () -> Unit) {
                             return@launch // Cancelamos la compra
                         }
 
-                        // --- 2. DESCUENTO DE STOCK Y GUARDADO ---
+
                         ShoppingCart.items.forEach { cartItem ->
                             val productInDb = productDao.getProductById(cartItem.fruit.id)
                             if (productInDb != null) {
@@ -153,7 +151,7 @@ fun CartScreen(userEmail: String, onPaymentSuccess: () -> Unit) {
                             }
                         }
 
-                        // Guardamos el pedido en el historial del usuario
+
                         val summary = ShoppingCart.items.joinToString(", ") { "${it.quantity}x ${it.fruit.name}" }
                         val newOrder = OrderEntity(
                             userEmail = userEmail,
@@ -165,7 +163,7 @@ fun CartScreen(userEmail: String, onPaymentSuccess: () -> Unit) {
                         )
                         orderDao.insertOrder(newOrder)
 
-                        // --- 3. FINALIZAR ---
+
                         ShoppingCart.clearCart()
                         showPaymentForm = false
                         onPaymentSuccess() // Volver a Productos
@@ -180,9 +178,7 @@ fun CartScreen(userEmail: String, onPaymentSuccess: () -> Unit) {
     }
 }
 
-// ----------------------------------------------------
-// ITEM DE CARRITO (Con imagen de internet o local)
-// ----------------------------------------------------
+
 @Composable
 fun CartItemRow(item: CartItem) {
     Row(
@@ -190,7 +186,7 @@ fun CartItemRow(item: CartItem) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        // Lógica de Imagen Híbrida: URL o Local
+
         if (item.fruit.imageUrl != null) {
             AsyncImage(
                 model = item.fruit.imageUrl,
@@ -201,7 +197,7 @@ fun CartItemRow(item: CartItem) {
                 error = painterResource(id = R.drawable.huerto_hogar_2)
             )
         } else {
-            // Fallback: Producto local antiguo
+
             Image(
                 painter = painterResource(id = R.drawable.huerto_hogar_2),
                 contentDescription = item.fruit.name,
@@ -232,9 +228,7 @@ fun CartItemRow(item: CartItem) {
     }
 }
 
-// ----------------------------------------------------
-// FORMULARIO DE DESPACHO
-// ----------------------------------------------------
+
 @Composable
 fun CheckoutForm(onDismiss: () -> Unit, onConfirm: (String, String, String) -> Unit) {
     var clientName by remember { mutableStateOf("") }

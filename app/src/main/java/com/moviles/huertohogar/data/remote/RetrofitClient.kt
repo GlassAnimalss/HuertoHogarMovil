@@ -9,7 +9,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitClient {
-    // URL Base proporcionada
+
     private const val BASE_URL = "https://api-dfs2-dm-production.up.railway.app/"
 
     // 1. Interceptor para ver los logs en el Logcat (útil para debug)

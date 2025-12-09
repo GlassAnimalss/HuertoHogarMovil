@@ -2,14 +2,14 @@
 
 package com.moviles.huertohogar.domain.models
 
-// 1. Modelo de datos para un producto
+
 data class Fruit(
     val id: Int,
     val name: String,
     val price: Double,
     val unit: String,
     val stock: Int,
-    val imageUrl: String? // <<< CAMBIO: URL de la imagen
+    val imageUrl: String?
 )
 
 // 2. Modelo de datos para un ítem en el carrito
