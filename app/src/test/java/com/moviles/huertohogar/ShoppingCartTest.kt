@@ -9,15 +9,14 @@ import org.junit.Test
 
 class ShoppingCartTest {
 
-    // DATOS DE PRUEBA
-    // Actualizamos el constructor para usar 'imageUrl' en lugar de 'imageResId'
+
     private val manzana = Fruit(
         id = 1,
         name = "Manzana",
         price = 1000.0,
         unit = "kg",
         stock = 10,
-        imageUrl = null // <--- CAMBIO: Ahora es null porque es un String opcional
+        imageUrl = null
     )
 
     private val pera = Fruit(
