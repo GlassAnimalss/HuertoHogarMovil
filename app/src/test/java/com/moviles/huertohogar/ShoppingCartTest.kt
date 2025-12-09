@@ -10,14 +10,14 @@ import org.junit.Test
 class ShoppingCartTest {
 
     // DATOS DE PRUEBA
-    // Creamos frutas falsas para usar en las pruebas
+    // Actualizamos el constructor para usar 'imageUrl' en lugar de 'imageResId'
     private val manzana = Fruit(
         id = 1,
         name = "Manzana",
         price = 1000.0,
         unit = "kg",
         stock = 10,
-        imageResId = 0
+        imageUrl = null // <--- CAMBIO: Ahora es null porque es un String opcional
     )
 
     private val pera = Fruit(
@@ -26,11 +26,10 @@ class ShoppingCartTest {
         price = 2000.0,
         unit = "kg",
         stock = 5,
-        imageResId = 0
+        imageUrl = null // <--- CAMBIO
     )
 
     // CONFIGURACIÓN INICIAL
-    // Esta función se ejecuta ANTES de cada @Test para asegurar que el carrito empiece vacío.
     @Before
     fun setup() {
         ShoppingCart.clearCart()
@@ -41,9 +40,7 @@ class ShoppingCartTest {
     fun `al agregar un producto nuevo, la cantidad debe ser 1`() {
         ShoppingCart.addItem(manzana)
 
-        // Verificamos que la lista tenga 1 elemento
         assertEquals(1, ShoppingCart.items.size)
-        // Verificamos que la cantidad de ese elemento sea 1
         assertEquals(1, ShoppingCart.items[0].quantity)
     }
 
@@ -51,11 +48,9 @@ class ShoppingCartTest {
     @Test
     fun `al agregar el mismo producto dos veces, la cantidad debe subir a 2`() {
         ShoppingCart.addItem(manzana)
-        ShoppingCart.addItem(manzana) // Agregamos de nuevo
+        ShoppingCart.addItem(manzana)
 
-        // La lista debe seguir teniendo solo 1 ítem (no 2 filas)
         assertEquals(1, ShoppingCart.items.size)
-        // Pero la cantidad debe ser 2
         assertEquals(2, ShoppingCart.items[0].quantity)
     }
 
@@ -72,7 +67,6 @@ class ShoppingCartTest {
         // Total esperado = 4000
         val totalCalculado = ShoppingCart.getTotalPrice()
 
-        // El tercer parámetro (0.0) es el margen de error permitido para doubles
         assertEquals(4000.0, totalCalculado, 0.0)
     }
 
@@ -81,11 +75,9 @@ class ShoppingCartTest {
     fun `al eliminar un item con cantidad 1, debe desaparecer de la lista`() {
         ShoppingCart.addItem(manzana)
 
-        // Obtenemos el item del carrito para borrarlo
         val itemEnCarrito = ShoppingCart.items[0]
         ShoppingCart.removeItem(itemEnCarrito)
 
-        // La lista debe estar vacía
         assertTrue(ShoppingCart.items.isEmpty())
     }
 
@@ -98,7 +90,6 @@ class ShoppingCartTest {
         val itemEnCarrito = ShoppingCart.items[0]
         ShoppingCart.removeItem(itemEnCarrito) // Eliminamos uno
 
-        // Debe seguir en la lista, pero con cantidad 1
         assertEquals(1, ShoppingCart.items.size)
         assertEquals(1, ShoppingCart.items[0].quantity)
     }
